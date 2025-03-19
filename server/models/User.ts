@@ -8,30 +8,29 @@ export enum UserRole {
 }
 
 export interface IUser extends Document {
-  name: string;
   email: string;
-  password: string;
+  password?: string;
+  firstName: string;
+  lastName: string;
+  googleId?: string;
   role: UserRole;
   profileData: {
-    skills: string[];
+    skills?: string[];
     experience: string;
     education: string[];
     resume?: string; // URL to resume file
     location?: string;
     jobPreferences?: string[];
     phone?: string;
+    profilePicture?: string;
   };
-  createdAt: Date;
-  updatedAt: Date;
+  company?: mongoose.Types.ObjectId;
+  isEmailVerified: boolean;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
+
 const UserSchema = new Schema<IUser>(
   {
-    name: {
-      type: String,
-      required: [true, "Name is required"],
-      trim: true,
-    },
     email: {
       type: String,
       required: [true, "Email is required"],
@@ -43,6 +42,19 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
+    },
+    firstName: {
+      type: String,
+      required: [true, "FirstName is required"],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: [true, "LastName is required"],
+      trim: true,
+    },
+    googleId: {
+      type: String,
     },
     role: {
       type: String,
@@ -57,7 +69,12 @@ const UserSchema = new Schema<IUser>(
       location: String,
       jobPreferences: [String],
       phone: String,
+      profilePicture: String
     },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: 'Company'
+    }
   },
   { timestamps: true }
 );
