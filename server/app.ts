@@ -1,12 +1,11 @@
 import express from "express";
 import { Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import rateLimit from "express-rate-limit";
+import config from "./config/config";
 
 const app = express();
 const httpServer = createServer(app);
@@ -14,7 +13,7 @@ const httpServer = createServer(app);
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: config.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   })
 );

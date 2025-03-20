@@ -1,61 +1,267 @@
-import { Request, Response } from "express";
-import User from "../models/User";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
+import { User, IUser } from "../models/User";
+import { Token } from "../models/Token";
+import { generateToken } from "../utils/jwt";
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from "../services/emailService";
+import { AppError } from "../middlewares/error";
+import { AuthRequest } from "../middlewares/auth";
 import config from "../config/config";
-import crypto from "crypto";
-import { sendEmail } from "../utils/email";
 
-const CLIENT_URL = config.CLIENT_URL;
-
-export const register = async (req: Request, res: Response) => {
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { email, password, firstName, lastName, role } = req.body;
+
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return next(new AppError("User already exists", 400));
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-
-    const newUser = new User({
-      name,
+    const user = await User.create({
       email,
-      password: hashedPassword,
-      role,
-      isVerified: false,
-      verificationToken,
+      password,
+      firstName,
+      lastName,
+      role: role || "candidate",
     });
 
-    await newUser.save();
-
-    const verificationLink = `${CLIENT_URL}/verify/${verificationToken}`;
-
-    const emailOptions = {
-      email,
-      subject: "Welcome to Ajiri! Confirm Your Email Address",
-      message: `
-       <div style="background-color: #fafafa; padding: 20px; border-radius: 10px;">
-    <h1 style="color: #633cff; margin-bottom: 20px;">Welcome aboard!</h1>
-    <p style="color: #737373; margin-bottom: 15px;">Greetings from DevLinks! We're thrilled to have you join our community.</p>
-    <p style="color: #737373; margin-bottom: 15px;">To complete your registration and unlock all the amazing features, please click the button below to verify your email address:</p>
-    <p style="text-align: center; margin-bottom: 20px;"><a href="${verificationLink}" style="background-color: #633cff; color: #fafafa; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Verify Email Address</a></p>
-    <p style="color: #737373; margin-bottom: 15px;">Alternatively, you can copy and paste the following link into your browser:</p>
-    <p style="color: #737373; margin-bottom: 15px;"><em>${verificationLink}</em></p>
-    <p style="color: #737373; font-weight: bold;">If you didn't sign up for  DevLinks, no worries! Simply ignore this email.</p>
-  </div>
-      `,
-    };
-
     // send verification email
-    await sendEmail(emailOptions);
+    await sendVerificationEmail(user);
+
+    // Generate JWT token
+    const token = generateToken(user);
 
     res.status(201).json({
-      status: 'success',
-      message: 'Verification email sent. Please verify email address.'
-    })
+      status: "success",
+      message:
+        "Registration successful, verification email sent. Please verify email address.",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
-    
-  } catch (error) {}
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password } = req.body;
+
+    // Check if user exists
+    const user = await User.findOne({ email }).select("+password");
+    if (!user || !(await user.comparePassword(password))) {
+      return next(new AppError("Invalid email or password", 401));
+    }
+
+    // Generate JWT token
+    const token = generateToken(user);
+
+    res.status(200).json({
+      status: "success",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { token } = req.params;
+
+    // Find token in database
+    const verificationToken = await Token.findOne({
+      token,
+      type: "verify",
+    });
+
+    if (!verificationToken) {
+      return next(new AppError("Invalid or expired verification token", 400));
+    }
+
+    // Update user
+    const user = await User.findByIdAndUpdate(
+      verificationToken.userId,
+      { isEmailVerified: true },
+      { new: true }
+    );
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    // Delete the token
+    await Token.findByIdAndDelete(verificationToken._id);
+
+    res.status(200).json({
+      status: "success",
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    // send password reset email
+    await sendPasswordResetEmail(user);
+
+    res.status(200).json({
+      status: "success",
+      message: "Password reset link sent to your email",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    // Find token in database
+    const resetToken = await Token.findOne({
+      token,
+      type: "reset",
+    });
+
+    if (!resetToken) {
+      return next(new AppError("Invalid or expired reset token", 400));
+    }
+
+    // Update user password
+    const user = await User.findById(resetToken.userId);
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    user.password = password;
+    await user.save();
+
+    // Delete the token
+    await Token.findByIdAndDelete(resetToken._id);
+
+    res.status(200).json({
+      status: "success",
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googelCallback = (req: AuthRequest, res: Response) => {
+  const token = generateToken(req.user);
+
+  // Redirect to the frontend with the token
+  res.redirect(`${config.FRONTEND_URL}/auth/google-callback?token=${token}`);
+};
+
+export const getMe = (req: AuthRequest, res: Response) => {
+  res.status(200).json({
+    status: "success",
+    user: req.user,
+  });
+};
+
+export const updateProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { firstName, lastName, profileData } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        firstName,
+        lastName,
+        profileData,
+      },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      status: "success",
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changeRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
 };

@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import {User, IUser} from "../models/User";
+import { User, IUser } from "../models/User";
 import config from "../config/config";
 import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
@@ -12,7 +12,6 @@ declare module "express" {
   }
 }
 
-
 // google strategy
 passport.use(
   new GoogleStrategy(
@@ -20,40 +19,39 @@ passport.use(
       clientID: config.GOOGLE_CLIENT_ID,
       clientSecret: config.GOOGLE_CLIENT_SECRET,
       callbackURL: config.OAUTH_CALLBACK_URL,
-      scope: ['profile', 'email']
+      scope: ["profile", "email"],
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({email: profile.emails![0].value});
-       if (user) {
-        // if user exists but signed up with email/password
-        if(!user.googleId) {
-          user.googleId = profile.id;
-          await user.save();
+        let user = await User.findOne({ email: profile.emails![0].value });
+        if (user) {
+          // if user exists but signed up with email/password
+          if (!user.googleId) {
+            user.googleId = profile.id;
+            await user.save();
+          }
+
+          return done(null, user);
         }
 
-        return done(null, user)
-       }
+        //  create new User
+        user = await User.create({
+          email: profile.emails![0].value,
+          firstName: profile.name?.giverName || "",
+          lastName: profile.name?.familName || "",
+          googleId: profile.id,
+          profilePicture: profile.photos![0].value,
+          isEmailVerified: true, //Google accounts already have verified email accounts
+          role: "candidate", // default role
+        });
 
-      //  create new User
-      user = await User.create({
-        email: profile.emails![0].value,
-        firstName: profile.name?.giverName || '',
-        lastName: profile.name?.familName || '',
-        googleId: profile.id,
-        profilePicture: profile.photos![0].value,
-        isEmailVerified: true, //Google accounts already have verified email accounts
-        role: 'candidate' // default role
-      })
-
-       return done(null, user)
+        return done(null, user);
       } catch (error) {
         return done(error as Error, undefined);
       }
     }
   )
 );
-
 
 // jwt strategy
 

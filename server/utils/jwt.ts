@@ -1,46 +1,37 @@
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions, Secret, JwtPayload } from "jsonwebtoken";
 // import { UserRole } from "../models/User";
 // import config from "../config/";
-import config from '../config/config'
-import {IUser} from '../models/User'
+import config from "../config/config";
+import { IUser } from "../models/User";
 
-const JWT_SECRET = config.JWT_SECRET;
-const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN
+const JWT_SECRET = config.JWT_SECRET || ("" as Secret);
+// Define a type for the expiresIn value
+const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || "1d";
 
 export const generateToken = (user: IUser): string => {
-  return jwt.sign({
-    id: user._id,
-    email: user.email,
-    role: user.role,
-  },
-  JWT_SECRET,
-  {
-    expiresIn: JWT_EXPIRES_IN
+  if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is not defined");
   }
-)
+
+  const options: SignOptions = {
+    // Use a direct cast to any to bypass type checking
+    expiresIn: JWT_EXPIRES_IN as any,
+  };
+
+  return jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+    JWT_SECRET,
+    options
+  );
 };
 
 export const verifyToken = (token: string): any => {
   return jwt.verify(token, JWT_SECRET);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+};
 
 // interface TokenPayload {
 //   id: string;

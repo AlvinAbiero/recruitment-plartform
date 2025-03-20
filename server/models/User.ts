@@ -69,18 +69,18 @@ const UserSchema = new Schema<IUser>(
       location: String,
       jobPreferences: [String],
       phone: String,
-      profilePicture: String
+      profilePicture: String,
     },
     company: {
       type: Schema.Types.ObjectId,
-      ref: 'Company'
-    }
+      ref: "Company",
+    },
   },
   { timestamps: true }
 );
 
 UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -119,5 +119,4 @@ UserSchema.virtual("jobPostings", {
   justOne: false,
 });
 
-const User = mongoose.model<IUser>("User", UserSchema);
-export default User;
+export const User = mongoose.model<IUser>("User", UserSchema);

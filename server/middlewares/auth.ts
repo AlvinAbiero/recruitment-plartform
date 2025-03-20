@@ -1,76 +1,54 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import passport from "passport";
 import { UserRole } from "../models/User";
-import config from "../config/config";
+import { AppError } from "../middlewares/error";
 
-// Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        role: UserRole;
-      };
-    }
-  }
+export interface AuthRequest extends Request {
+  user?: any;
 }
 
-export const authenticateUser = (
-  req: Request,
+export const isAuthenticated = (
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  //  Get token from header
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1];
+  passport.authenticate(
+    "jwt",
+    { session: false },
+    (err: any, user: any, info: any) => {
+      if (err) {
+        return next(err);
+      }
 
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: "Access denied. No token provided",
-    });
-  }
+      if (!user) {
+        return next(new AppError("Not authorized, please login", 401));
+      }
 
-  try {
-    //  verify token
-    const secret = config.JWT_SECRET;
-
-    if (!secret) {
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error: JWT secret not configured",
-      });
+      req.user = user;
+      next();
     }
-
-    const decoded = jwt.verify(token, secret) as unknown as {
-      id: string;
-      role: UserRole;
-    };
-
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: "Invalid Token.",
-    });
-  }
+  )(req, res, next);
 };
 
-export const authorizeRoles = (...roles: UserRole[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+export const isEmailVerified = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user.isEmailVerified) {
+    return next(new AppError("Please verify your email address first", 403));
+  }
+  next();
+};
+
+export const authorize = (...roles: UserRole[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "User not authenticated",
-      });
+      return next(new AppError("Not authorized", 401));
     }
 
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Role ${req.user.role} is not authorized to access this resource.`,
-      });
+      return next(new AppError("Not authorized to access this resource", 403));
     }
 
     next();

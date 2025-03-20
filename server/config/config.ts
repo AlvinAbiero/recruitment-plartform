@@ -12,6 +12,8 @@ const config = {
   OAUTH_CALLBACK_URL: process.env.OAUTH_CALLBACK_URL,
   EMAIL_USERNAME: process.env.EMAIL_USERNAME,
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
+  FRONTEND_URL: process.env.FRONTEND_URL,
+  EMAIL_FROM: process.env.EMAIL_FROM,
 };
 
 export default config;
