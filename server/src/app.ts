@@ -1,14 +1,16 @@
 import express from "express";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, } from "express";
 import cors from "cors";
 import helmet from "helmet";
-import { createServer } from "http";
-import { Server } from "socket.io";
+// import { createServer } from "http";
+// import { Server } from "socket.io";
 import rateLimit from "express-rate-limit";
 import config from "./config/config";
+import passport from "./config/passport";
+import { errorHandler } from "./middlewares/error";
 
 const app = express();
-const httpServer = createServer(app);
+// const httpServer = createServer(app);
 
 app.use(helmet());
 app.use(
@@ -19,6 +21,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(passport.initialize());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -28,18 +31,13 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.get("/health", (req, res) => {
+// Routes
+app.use("/api/auth");
+
+app.get("/health", (_req: Request, res : Response) => {
   res.status(200).send({ status: "ok" });
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(err.status || 500).send({
-    message: err.message || "Something went wrong",
-    error: process.env.NODE_ENV === "development" ? err : {},
-  });
-});
-
-const PORT = process.env.PORT || 5000;
+app.use(errorHandler);
 
 export { app };

@@ -2,9 +2,10 @@ import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
 export enum UserRole {
-  CANDIDATE = "candidate",
-  RECRUITER = "recruiter",
   ADMIN = "admin",
+  CANDIDATE = "candidate",
+  EMPLOYER = "employer",
+  RECRUITER = "recruiter",
 }
 
 export interface IUser extends Document {
