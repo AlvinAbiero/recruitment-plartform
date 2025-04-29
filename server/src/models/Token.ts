@@ -1,16 +1,16 @@
-import mongoose, {Document, Schema} from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IToken extends Document {
-    userId: mongoose.Types.ObjectId;
-    token: string;
-    type: 'verify' | 'reset';
-    expiresAt: Date
+  userId: mongoose.Types.ObjectId;
+  token: string;
+  type: "verify" | "reset";
+  expiresAt: Date;
 }
 
 const TokenSchema = new Schema<IToken>({
-     userId: {
+  userId: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true,
   },
   token: {
@@ -19,19 +19,19 @@ const TokenSchema = new Schema<IToken>({
   },
   type: {
     type: String,
-    enum: ['verify', 'reset'],
+    enum: ["verify", "reset"],
     required: true,
   },
-   expiresAt: {
+  expiresAt: {
     type: Date,
     required: true,
-    default: function() {
+    default: function () {
       return new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
     },
   },
-})
+});
 
 // Create index to automatically expire documents
-TokenSchema.index({expiresAt: 1}, {expiresAfterSeconds: 0});
+TokenSchema.index({ expiresAt: 1 });
 
-export const Token = mongoose.model<IToken>('Token', TokenSchema)
+export const Token = mongoose.model<IToken>("Token", TokenSchema);

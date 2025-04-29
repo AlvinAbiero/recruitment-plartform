@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { User, IUser } from "../models/User";
+import { User } from "../models/User";
 import { Token } from "../models/Token";
 import { generateToken } from "../utils/jwt";
 import {
@@ -197,18 +197,54 @@ export const resetPassword = async (
   }
 };
 
-export const googelCallback = (req: AuthRequest, res: Response) => {
-  const token = generateToken(req.user);
+export const googelCallback = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      return res.redirect(
+        `${config.FRONTEND_URL}/auth/google?error=Authentication failed`
+      );
+    }
+    const token = generateToken(req.user);
 
-  // Redirect to the frontend with the token
-  res.redirect(`${config.FRONTEND_URL}/auth/google-callback?token=${token}`);
+    // You might want to set cookies instead of using query params for better security
+    // Or redirect to a page that will store the token in localStorage/sessionStorage
+    // Redirect to the frontend with the token
+    res.redirect(`${config.FRONTEND_URL}/auth/google-callback?token=${token}`);
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const getMe = (req: AuthRequest, res: Response) => {
-  res.status(200).json({
-    status: "success",
-    user: req.user,
-  });
+export const getMe = (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return next(new AppError("Not authenticated", 401));
+    }
+
+    // Return only necessary user information (sanitize sensitive data)
+    const userData = {
+      id: req.user._id,
+      email: req.user.email,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      role: req.user.role,
+      isEmailVerified: req.user.isEmailVerified,
+      profilePicture: req.user.profilePicture,
+      skills: req.user.skills,
+      experience: req.user.experience,
+    };
+
+    res.status(200).json({
+      status: "success",
+      user: userData,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const updateProfile = async (

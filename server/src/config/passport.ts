@@ -1,6 +1,9 @@
 import passport from "passport";
 // import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
-import { Strategy as GoogleStrategy, ExtractJwt } from "passport-google-oauth20";
+import {
+  Strategy as GoogleStrategy,
+  ExtractJwt,
+} from "passport-google-oauth20";
 import { User, IUser } from "../models/User";
 import config from "./config";
 // import express, { Request, Response } from "express";
@@ -53,33 +56,6 @@ passport.use(
     }
   )
 );
-
-
-// export const googleAuth = passport.authenticate("google", {
-//   scope: ["profile", "email"],
-// });
-
-// export const googleAuthCallBack = passport.authenticate("google", {
-//   failureRedirect: "/auth/login",
-//   session: false,
-// });
-
-// export const googleAuthSuccess = (req: Request, res: Response) => {
-//   if (!req.user) {
-//     res.status(401).json({ message: "Authentication failed" });
-//   }
-
-//   const JWT_SECRET = config.JWT_SECRET as string;
-//   const CLIENT_URL = config.CLIENT_URL;
-
-//   const token = jwt.sign(
-//     { userId: req.user.id, role: req.user.role },
-//     JWT_SECRET,
-//     { expiresIn: "7d" }
-//   );
-
-//   res.redirect(`${CLIENT_URL}/dashboard?token=${token}`);
-// };
 
 // Persists user data inside session
 passport.serializeUser((user: any, done) => {

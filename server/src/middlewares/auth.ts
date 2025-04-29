@@ -12,27 +12,23 @@ export const isAuthenticated = (
   res: Response,
   next: NextFunction
 ) => {
-  passport.authenticate(
-    "jwt",
-    { session: false },
-    (err: any, user: any, info: any) => {
-      if (err) {
-        return next(err);
-      }
-
-      if (!user) {
-        return next(new AppError("Not authorized, please login", 401));
-      }
-
-      req.user = user;
-      next();
+  passport.authenticate("jwt", { session: false }, (err: any, user: any) => {
+    if (err) {
+      return next(err);
     }
-  )(req, res, next);
+
+    if (!user) {
+      return next(new AppError("Not authorized, please login", 401));
+    }
+
+    req.user = user;
+    next();
+  })(req, res, next);
 };
 
 export const isEmailVerified = (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   if (!req.user.isEmailVerified) {
@@ -42,7 +38,7 @@ export const isEmailVerified = (
 };
 
 export const authorize = (...roles: UserRole[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AppError("Not authorized", 401));
     }
