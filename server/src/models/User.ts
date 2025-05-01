@@ -7,6 +7,12 @@ export enum UserRole {
   RECRUITER = "recruiter",
 }
 
+enum AccountStatus {
+  ACTIVE = "active",
+  SUSPENDED = "suspended",
+  DEACTIVATED = "deactivated",
+}
+
 export interface IUser extends Document {
   email: string;
   password?: string;
@@ -14,17 +20,9 @@ export interface IUser extends Document {
   lastName: string;
   googleId?: string;
   role: UserRole;
-  profileData: {
-    skills?: string[];
-    experience: string;
-    education: string[];
-    resume?: string; // URL to resume file
-    location?: string;
-    jobPreferences?: string[];
-    phone?: string;
-    profilePicture?: string;
-  };
-  company?: mongoose.Types.ObjectId;
+  avatarUrl?: string;
+  accountStatus?: AccountStatus;
+  companyId?: mongoose.Types.ObjectId;
   isEmailVerified: boolean;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -53,25 +51,21 @@ const UserSchema = new Schema<IUser>(
       required: [true, "LastName is required"],
       trim: true,
     },
-    googleId: {
-      type: String,
-    },
     role: {
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.CANDIDATE,
     },
-    profileData: {
-      skills: [String],
-      experience: String,
-      education: [String],
-      resume: String,
-      location: String,
-      jobPreferences: [String],
-      phone: String,
-      profilePicture: String,
+    avatarUrl: String,
+    accountStatus: {
+      type: String,
+      enum: Object.values(AccountStatus),
+      default: AccountStatus.ACTIVE,
     },
-    company: {
+    googleId: {
+      type: String,
+    },
+    companyId: {
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
@@ -119,4 +113,5 @@ UserSchema.virtual("jobPostings", {
   justOne: false,
 });
 
-export const User = mongoose.model<IUser>("User", UserSchema);
+const User = mongoose.model<IUser>("Application", UserSchema);
+export default User;

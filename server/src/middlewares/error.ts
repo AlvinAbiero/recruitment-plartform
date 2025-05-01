@@ -17,9 +17,9 @@ export class AppError extends Error {
 
 export const errorHandler = (
   err: any,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";

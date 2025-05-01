@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { validationResult, ValidationChain } from "express-validator";
-import { AppError } from "./error";
+// import { AppError } from "./error";
 
 export const validate = (validations: ValidationChain[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -16,6 +16,10 @@ export const validate = (validations: ValidationChain[]) => {
       });
     }
 
-    next();
+    //  if (!errors.isEmpty()) {
+    //    return next(new AppError("Validation failed", 400));
+    //  }
+
+    return next();
   };
 };

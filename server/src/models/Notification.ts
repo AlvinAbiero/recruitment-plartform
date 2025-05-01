@@ -1,11 +1,11 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
 export enum NotificationType {
-  JOB_MATCH = 'job_match',
-  APPLICATION_UPDATE = 'application_update',
-  INTERVIEW_SCHEDULED = 'interview_scheduled',
-  INTERVIEW_REMINDER = 'interview_reminder',
-  GENERAL = 'general'
+  JOB_MATCH = "job_match",
+  APPLICATION_UPDATE = "application_update",
+  INTERVIEW_SCHEDULED = "interview_scheduled",
+  INTERVIEW_REMINDER = "interview_reminder",
+  GENERAL = "general",
 }
 
 export interface INotification extends Document {
@@ -14,7 +14,10 @@ export interface INotification extends Document {
   message: string;
   type: NotificationType;
   urgencyScore?: number; // AI-calculated score
-  relatedId?: mongoose.Types.ObjectId; // ID of related job, application, etc.
+  relatedEntity?: {
+    type: "job" | "application" | "interview" | "candidate" | "company";
+    id: mongoose.Types.ObjectId;
+  };
   isRead: boolean;
   createdAt: Date;
   expiresAt?: Date;
@@ -24,35 +27,39 @@ const NotificationSchema = new Schema<INotification>(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'User ID is required']
+      ref: "User",
+      required: [true, "User ID is required"],
     },
     title: {
       type: String,
-      required: [true, 'Notification title is required']
+      required: [true, "Notification title is required"],
     },
     message: {
       type: String,
-      required: [true, 'Notification message is required']
+      required: [true, "Notification message is required"],
     },
     type: {
       type: String,
       enum: Object.values(NotificationType),
-      default: NotificationType.GENERAL
+      default: NotificationType.GENERAL,
     },
     urgencyScore: {
       type: Number,
       min: 0,
-      max: 10
+      max: 10,
     },
-    relatedId: {
-      type: Schema.Types.ObjectId
+    relatedEntity: {
+      type: {
+        type: String,
+        enum: ["job", "application", "interview", "candidate", "company"],
+      },
+      id: mongoose.Schema.Types.ObjectId,
     },
     isRead: {
       type: Boolean,
-      default: false
+      default: false,
     },
-    expiresAt: Date
+    expiresAt: Date,
   },
   { timestamps: true }
 );
@@ -62,5 +69,8 @@ NotificationSchema.index({ userId: 1, isRead: 1 });
 NotificationSchema.index({ userId: 1, createdAt: -1 });
 NotificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
-const Notification = mongoose.model<INotification>('Notification', NotificationSchema);
+const Notification = mongoose.model<INotification>(
+  "Notification",
+  NotificationSchema
+);
 export default Notification;
