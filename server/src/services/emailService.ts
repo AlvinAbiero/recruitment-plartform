@@ -1,19 +1,14 @@
 import { sendEmail } from "../utils/email";
-import { Token } from "../models/Token";
 import { IUser } from "../models/User";
-import crypto from "crypto";
 import config from "../config/config";
+import {
+  generatePasswordResetToken,
+  generateVerificationToken,
+} from "../utils/jwt";
 
 export const sendVerificationEmail = async (user: IUser): Promise<void> => {
   // Generate verification token
-  const verificationToken = crypto.randomBytes(32).toString("hex");
-
-  // save token to database
-  await Token.create({
-    userId: user._id,
-    token: verificationToken,
-    type: "verify",
-  });
+  const verificationToken = generateVerificationToken(user._id.toString());
 
   const verificationUrl = `${config.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
@@ -37,14 +32,7 @@ export const sendVerificationEmail = async (user: IUser): Promise<void> => {
 
 export const sendPasswordResetEmail = async (user: IUser): Promise<void> => {
   // Generate reset tokem
-  const resetToken = crypto.randomBytes(32).toString("hex");
-
-  // Save token to database
-  await Token.create({
-    userId: user._id,
-    token: resetToken,
-    type: "reset",
-  });
+  const resetToken = generatePasswordResetToken(user._id.toString());
 
   const resetUrl = `${config.FRONTEND_URL}/reset-password?token=${resetToken}`;
 

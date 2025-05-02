@@ -1,12 +1,12 @@
-import jwt, { SignOptions, Secret, JwtPayload } from "jsonwebtoken";
-// import { UserRole } from "../models/User";
-// import config from "../config/";
+import jwt, { SignOptions, Secret } from "jsonwebtoken";
+import crypto from "crypto";
+import { Token } from "../models/Token";
 import config from "../config/config";
 import { IUser } from "../models/User";
 
 const JWT_SECRET = config.JWT_SECRET || ("" as Secret);
 // Define a type for the expiresIn value
-const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || "1d";
+const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN;
 
 export const generateToken = (user: IUser): string => {
   if (!JWT_SECRET) {
@@ -29,21 +29,42 @@ export const generateToken = (user: IUser): string => {
   );
 };
 
+// Generate verification token
+export const generateVerificationToken = async (
+  userId: string
+): Promise<string> => {
+  // Generate random token
+  const token = crypto.randomBytes(32).toString("hex");
+
+  // Save token to database
+  await Token.create({
+    userId,
+    token,
+    type: "verify",
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+  });
+
+  return token;
+};
+
+// Generate password reset token
+export const generatePasswordResetToken = async (
+  userId: string
+): Promise<string> => {
+  // Generate random token
+  const token = crypto.randomBytes(32).toString("hex");
+
+  // Save token to database
+  await Token.create({
+    userId,
+    token,
+    type: "reset",
+    expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour
+  });
+
+  return token;
+};
+
 export const verifyToken = (token: string): any => {
   return jwt.verify(token, JWT_SECRET);
 };
-
-// interface TokenPayload {
-//   id: string;
-//   role: UserRole;
-// }
-
-// export const generateToken = (payload: TokenPayload): string => {
-//   const secret = config.JWT_SECRET;
-//   const expiresIn = config.JWT_EXPIRE;
-
-//   if (!secret) {
-//     throw new Error("JWT secret is not defined"); // Handle the error appropriately
-//   }
-//   return jwt.sign(payload, secret as string, { expiresIn });
-// };

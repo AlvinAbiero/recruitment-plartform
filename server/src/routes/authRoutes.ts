@@ -17,7 +17,7 @@ router.get("/verify-email/:token", authController.verifyEmail);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password/:token", authController.resetPassword);
 
-// Google OAuth routes
+// Google OAuth Routes
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -27,7 +27,7 @@ router.get(
   "/google/callback",
   passport.authenticate("google", {
     session: false,
-    failureRedirect: "/login",
+    failureRedirect: "/auth/login",
   }),
   authController.googelCallback
 );

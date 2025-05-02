@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import passport from "passport";
-import { UserRole } from "../models/User";
+import { UserRole, IUser } from "../models/User";
 import { AppError } from "../middlewares/error";
 
 export interface AuthRequest extends Request {
@@ -12,18 +12,22 @@ export const isAuthenticated = (
   res: Response,
   next: NextFunction
 ) => {
-  passport.authenticate("jwt", { session: false }, (err: any, user: any) => {
-    if (err) {
-      return next(err);
-    }
+  passport.authenticate(
+    "jwt",
+    { session: false },
+    (err: any, user: IUser | false) => {
+      if (err) {
+        return next(err);
+      }
 
-    if (!user) {
-      return next(new AppError("Not authorized, please login", 401));
-    }
+      if (!user) {
+        return next(new AppError("Not authorized, please login", 401));
+      }
 
-    req.user = user;
-    next();
-  })(req, res, next);
+      req.user = user;
+      next();
+    }
+  )(req, res, next);
 };
 
 export const isEmailVerified = (
@@ -31,7 +35,7 @@ export const isEmailVerified = (
   _res: Response,
   next: NextFunction
 ) => {
-  if (!req.user.isEmailVerified) {
+  if (!req.user?.isEmailVerified) {
     return next(new AppError("Please verify your email address first", 403));
   }
   next();

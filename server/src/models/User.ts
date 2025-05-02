@@ -14,6 +14,7 @@ enum AccountStatus {
 }
 
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   email: string;
   password?: string;
   firstName: string;
@@ -113,5 +114,4 @@ UserSchema.virtual("jobPostings", {
   justOne: false,
 });
 
-const User = mongoose.model<IUser>("Application", UserSchema);
-export default User;
+export const User = mongoose.model<IUser>("User", UserSchema);

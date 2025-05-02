@@ -1,16 +1,20 @@
 import express from "express";
-import { Request, Response, } from "express";
+import { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 // import { createServer } from "http";
 // import { Server } from "socket.io";
+import connectDb from "./config/db";
 import rateLimit from "express-rate-limit";
 import config from "./config/config";
 import passport from "./config/passport";
-import { errorHandler } from "./middlewares/error";
+import authRoutes from "./routes/authRoutes";
+import { errorHandler, AppError } from "./middlewares/error";
 
 const app = express();
-// const httpServer = createServer(app);
+
+// connect to mongoDB
+connectDb();
 
 app.use(helmet());
 app.use(
@@ -32,10 +36,15 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Routes
-app.use("/api/auth");
+app.use("/api/auth", authRoutes);
 
-app.get("/health", (_req: Request, res : Response) => {
+app.get("/health", (_req: Request, res: Response) => {
   res.status(200).send({ status: "ok" });
+});
+
+// 404 handler
+app.all("*", (req: Request, _res: Response, next: NextFunction) => {
+  next(new AppError(`Route ${req.originalUrl} not found`, 404));
 });
 
 app.use(errorHandler);

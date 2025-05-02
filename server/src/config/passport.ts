@@ -1,75 +1,98 @@
 import passport from "passport";
-// import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
+import {
+  Strategy as JwtStrategy,
+  ExtractJwt,
+  StrategyOptions,
+} from "passport-jwt";
 import {
   Strategy as GoogleStrategy,
-  ExtractJwt,
+  VerifyCallback,
 } from "passport-google-oauth20";
-import { User, IUser } from "../models/User";
-import config from "./config";
-// import express, { Request, Response } from "express";
-// import jwt from "jsonwebtoken";
-import { UserRole } from "../models/User";
+import { User } from "../models/User";
+import config from "../config/config";
 
-// declare module "express" {
-//   export interface Request {
-//     user?: any;
-//   }
-// }
+// Define JWT Strategy options
+const jwtOptions: StrategyOptions = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: config.JWT_SECRET,
+};
 
-// google strategy
+// Register JWT Strategy
+passport.use(
+  new JwtStrategy(jwtOptions, async (payload: any, done: any) => {
+    try {
+      // Find the user by ID from JWT payload
+      const user = await User.findById(payload.id);
+
+      if (!user) {
+        return done(null, false);
+      }
+
+      return done(null, user);
+    } catch (error) {
+      return done(error, false);
+    }
+  })
+);
+
+// Register Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
     {
       clientID: config.GOOGLE_CLIENT_ID,
       clientSecret: config.GOOGLE_CLIENT_SECRET,
-      callbackURL: config.OAUTH_CALLBACK_URL,
+      callbackURL: `${config.API_URL}/auth/google/callback`,
       scope: ["profile", "email"],
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (
+      _accessToken: string,
+      _refreshToken: string,
+      profile: any,
+      done: VerifyCallback
+    ) => {
       try {
-        let user = await User.findOne({ email: profile.emails![0].value });
+        // Check if user already exists
+        let user = await User.findOne({ email: profile.emails?.[0].value });
+
         if (user) {
-          // if user exists but signed up with email/password
+          // If user exists but was created through email/password (not Google)
           if (!user.googleId) {
             user.googleId = profile.id;
             await user.save();
           }
-
-          return done(null, user);
+        } else {
+          // Create new user from Google profile
+          user = await User.create({
+            email: profile.emails?.[0].value,
+            googleId: profile.id,
+            firstName: profile.name?.givenName || "",
+            lastName: profile.name?.familyName || "",
+            isEmailVerified: true, // Auto-verify for Google users
+            password: Math.random().toString(36).slice(-10), // Random password as placeholder
+            role: "candidate", // Default role for new users
+          });
         }
 
-        //  create new User
-        user = await User.create({
-          email: profile.emails![0].value,
-          firstName: profile.name?.giverName || "",
-          lastName: profile.name?.familName || "",
-          googleId: profile.id,
-          profilePicture: profile.photos![0].value,
-          isEmailVerified: true, //Google accounts already have verified email accounts
-          role: UserRole, // default role
-        });
-
-        return done(null, user);
+        return done(null, user as any);
       } catch (error) {
-        return done(error as Error, undefined);
+        return done(error as Error, false);
       }
     }
   )
 );
 
-// Persists user data inside session
-passport.serializeUser((user: any, done) => {
-  done(null, user.id);
-});
+// Serialization and Deserialization (required for sessions if you use them)
+// passport.serializeUser((user: Express.User, done) => {
+//   done(null, user._id);
+// });
 
-// Fetches session details using session id
-passport.deserializeUser(async (id: string, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (error) {
-    done(error, null);
-  }
-});
+// passport.deserializeUser(async (id: string, done) => {
+//   try {
+//     const user = (await User.findById(id)) as Express.User;
+//     done(null, user);
+//   } catch (error) {
+//     done(error, null);
+//   }
+// });
 
 export default passport;

@@ -233,9 +233,7 @@ export const getMe = (req: AuthRequest, res: Response, next: NextFunction) => {
       lastName: req.user.lastName,
       role: req.user.role,
       isEmailVerified: req.user.isEmailVerified,
-      profilePicture: req.user.profilePicture,
-      skills: req.user.skills,
-      experience: req.user.experience,
+      profilePicture: req.user.avatarUrl,
     };
 
     res.status(200).json({
@@ -254,6 +252,10 @@ export const updateProfile = async (
 ) => {
   try {
     const { firstName, lastName, profileData } = req.body;
+
+    if (!req.user) {
+      return next(new AppError("Not authenticated", 401));
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
