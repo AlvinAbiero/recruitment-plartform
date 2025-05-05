@@ -33,7 +33,6 @@ const UserSchema = new Schema<IUser>(
     email: {
       type: String,
       required: [true, "Email is required"],
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -70,6 +69,9 @@ const UserSchema = new Schema<IUser>(
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
+    isEmailVerified: {
+      type: Boolean,
+    },
   },
   { timestamps: true }
 );
@@ -93,10 +95,7 @@ UserSchema.methods.comparePassword = async function (
 };
 
 // create index on email for faster queries
-UserSchema.index({ email: 1 });
-
-// create index on skills for AI matching
-UserSchema.index({ "profileData.skills": 1 });
+UserSchema.index({ email: 1 }, { unique: true });
 
 // Virtual field for user's applications
 UserSchema.virtual("applications", {

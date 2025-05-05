@@ -1,7 +1,13 @@
 import nodemailer from "nodemailer";
 import config from "../config/config";
 
-const sendEmail = async (options: any) => {
+interface EmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+}
+
+const sendEmail = async (options: EmailOptions) => {
   // transporter
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -14,9 +20,9 @@ const sendEmail = async (options: any) => {
   // define email options
   const mailOptions = {
     from: `Ajiri <${config.EMAIL_FROM}>`,
-    to: options.email,
+    to: options.to,
     subject: options.subject,
-    html: options.message,
+    html: options.html,
   };
 
   // send the email

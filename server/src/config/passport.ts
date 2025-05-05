@@ -4,10 +4,10 @@ import {
   ExtractJwt,
   StrategyOptions,
 } from "passport-jwt";
-import {
-  Strategy as GoogleStrategy,
-  VerifyCallback,
-} from "passport-google-oauth20";
+// import {
+//   Strategy as GoogleStrategy,
+//   VerifyCallback,
+// } from "passport-google-oauth20";
 import { User } from "../models/User";
 import config from "../config/config";
 
@@ -36,50 +36,50 @@ passport.use(
 );
 
 // Register Google OAuth Strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: config.GOOGLE_CLIENT_ID,
-      clientSecret: config.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${config.API_URL}/auth/google/callback`,
-      scope: ["profile", "email"],
-    },
-    async (
-      _accessToken: string,
-      _refreshToken: string,
-      profile: any,
-      done: VerifyCallback
-    ) => {
-      try {
-        // Check if user already exists
-        let user = await User.findOne({ email: profile.emails?.[0].value });
+// passport.use(
+//   new GoogleStrategy(
+//     {
+//       clientID: config.GOOGLE_CLIENT_ID,
+//       clientSecret: config.GOOGLE_CLIENT_SECRET,
+//       callbackURL: `${config.API_URL}/auth/google/callback`,
+//       scope: ["profile", "email"],
+//     },
+//     async (
+//       _accessToken: string,
+//       _refreshToken: string,
+//       profile: any,
+//       done: VerifyCallback
+//     ) => {
+//       try {
+//         // Check if user already exists
+//         let user = await User.findOne({ email: profile.emails?.[0].value });
 
-        if (user) {
-          // If user exists but was created through email/password (not Google)
-          if (!user.googleId) {
-            user.googleId = profile.id;
-            await user.save();
-          }
-        } else {
-          // Create new user from Google profile
-          user = await User.create({
-            email: profile.emails?.[0].value,
-            googleId: profile.id,
-            firstName: profile.name?.givenName || "",
-            lastName: profile.name?.familyName || "",
-            isEmailVerified: true, // Auto-verify for Google users
-            password: Math.random().toString(36).slice(-10), // Random password as placeholder
-            role: "candidate", // Default role for new users
-          });
-        }
+//         if (user) {
+//           // If user exists but was created through email/password (not Google)
+//           if (!user.googleId) {
+//             user.googleId = profile.id;
+//             await user.save();
+//           }
+//         } else {
+//           // Create new user from Google profile
+//           user = await User.create({
+//             email: profile.emails?.[0].value,
+//             googleId: profile.id,
+//             firstName: profile.name?.givenName || "",
+//             lastName: profile.name?.familyName || "",
+//             isEmailVerified: true, // Auto-verify for Google users
+//             password: Math.random().toString(36).slice(-10), // Random password as placeholder
+//             role: "candidate", // Default role for new users
+//           });
+//         }
 
-        return done(null, user as any);
-      } catch (error) {
-        return done(error as Error, false);
-      }
-    }
-  )
-);
+//         return done(null, user as any);
+//       } catch (error) {
+//         return done(error as Error, false);
+//       }
+//     }
+//   )
+// );
 
 // Serialization and Deserialization (required for sessions if you use them)
 // passport.serializeUser((user: Express.User, done) => {

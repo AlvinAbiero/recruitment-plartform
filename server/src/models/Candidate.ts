@@ -162,7 +162,7 @@ const CandidateSchema = new Schema<ICandidate>(
 );
 
 CandidateSchema.index({ "skills.name": 1 });
-CandidateSchema.index({ location: "2dsphere" }); // For geospatial queries
+CandidateSchema.index({ location: "text" }); // For geospatial queries
 CandidateSchema.index({ resumeText: "text" }); // For full-text search on resume text
 CandidateSchema.index({ tags: 1 }); // For filtering by tags
 
