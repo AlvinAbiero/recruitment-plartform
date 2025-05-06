@@ -6,7 +6,7 @@ import { IUser } from "../models/User";
 
 const JWT_SECRET = config.JWT_SECRET || ("" as Secret);
 // Define a type for the expiresIn value
-const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN;
+const JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || "30d";
 
 export const generateToken = (user: IUser): string => {
   if (!JWT_SECRET) {

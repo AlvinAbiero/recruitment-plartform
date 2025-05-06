@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "passport";
 import * as authController from "../controllers/authController";
+import { Request, Response } from "express";
 import {
   isAuthenticated,
   isEmailVerified,
@@ -9,6 +10,41 @@ import {
 import { UserRole } from "../models/User";
 
 const router = express.Router();
+// Add this to your authRoutes.ts file
+import { diagnoseJwtIssue, verifySpecificToken } from "../utils/jwt-diagnostic";
+
+// Run JWT diagnostic on server startup
+diagnoseJwtIssue();
+
+// Add a diagnostic route
+router.post("/token-diagnostic", (req: Request, res: Response) => {
+  const { token } = req.body;
+
+  if (!token) {
+    res.status(400).json({
+      status: "fail",
+      message: "Please provide a token to diagnose",
+    });
+    return;
+  }
+
+  const decodedToken = verifySpecificToken(token);
+
+  if (decodedToken) {
+    res.status(200).json({
+      status: "success",
+      message: "Token is valid",
+      decodedToken,
+    });
+    return;
+  } else {
+    res.status(401).json({
+      status: "fail",
+      message: "Token verification failed. See server logs for details.",
+    });
+    return;
+  }
+});
 
 // Authentication routes
 router.post("/register", authController.register);

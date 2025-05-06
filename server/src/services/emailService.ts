@@ -8,7 +8,9 @@ import {
 
 export const sendVerificationEmail = async (user: IUser): Promise<void> => {
   // Generate verification token
-  const verificationToken = generateVerificationToken(user._id.toString());
+  const verificationToken = await generateVerificationToken(
+    user._id.toString()
+  );
 
   const verificationUrl = `${config.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
@@ -32,7 +34,7 @@ export const sendVerificationEmail = async (user: IUser): Promise<void> => {
 
 export const sendPasswordResetEmail = async (user: IUser): Promise<void> => {
   // Generate reset tokem
-  const resetToken = generatePasswordResetToken(user._id.toString());
+  const resetToken = await generatePasswordResetToken(user._id.toString());
 
   const resetUrl = `${config.FRONTEND_URL}/reset-password?token=${resetToken}`;
 

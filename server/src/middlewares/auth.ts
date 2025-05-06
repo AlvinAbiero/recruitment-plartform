@@ -12,12 +12,21 @@ export const isAuthenticated = (
   res: Response,
   next: NextFunction
 ) => {
+  // Check if the token exists in the request header
+  if (
+    !req.headers.authorization ||
+    !req.headers.authorization.startsWith("Bearer ")
+  ) {
+    return next(new AppError("No token provided", 401));
+  }
+
   passport.authenticate(
     "jwt",
     { session: false },
     (err: any, user: IUser | false) => {
       if (err) {
-        return next(err);
+        console.error("JWT Authentication error:", err);
+        return next(new AppError("Authentication error", 401));
       }
 
       if (!user) {
